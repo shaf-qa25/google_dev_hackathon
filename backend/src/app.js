@@ -1,16 +1,22 @@
 const express = require('express');
 const cors = require('cors');
+const morgan = require('morgan');
+const dotenv = require('dotenv');
+const analysisRoutes = require("./routes/analysisRoutes");
+
+dotenv.config();
 const app = express();
 
-// app.use(cors()); // Frontend se connect karne ke liye zaroori hai
+app.use(cors());
 app.use(express.json());
+app.use(morgan('dev'))
 
 // Pehla test route
 app.get('/', (req, res) => {
-    res.send("Backend is running! 🚀");
+    res.send("Backend is running!");
 });
 
-// Baaki routes (Upload, Analyze, Report) yahan define honge
+app.use('/api', analysisRoutes);
 // app.post('/api/upload', ...)
 
 module.exports = app;
