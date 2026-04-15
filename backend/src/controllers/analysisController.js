@@ -1,3 +1,4 @@
+const mlService = require("../services/mlService")
 exports.uploadFile = (req, res) => {
     try {
         if (!req.file) {
@@ -9,8 +10,8 @@ exports.uploadFile = (req, res) => {
 
         res.status(200).json({
             message: 'File uploaded successfully',
-            filename: req.file.filename,
-            originalName: req.file.originalname
+            csvUrl: req.file.path,
+            publicId: req.file.filename
         });
     } catch (error) {
         res.status(500).json({
@@ -21,7 +22,24 @@ exports.uploadFile = (req, res) => {
 };
 
 exports.runAnalysis = async (req, res) => {
-    res.status(200).json({
-        message: "Analysis route hit!!"
-    })
-}
+    try {
+        const { csvUrl, config } = req.body;
+
+        if (!csvUrl) {
+            return res.status(400).json({ message: "Dataset URL missing!" });
+        }
+
+        // Service call
+        const result = await mlService.analyzeDataset(csvUrl, config);
+
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
