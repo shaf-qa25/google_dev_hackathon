@@ -14,8 +14,9 @@ exports.uploadFile = (req, res) => {
             publicId: req.file.filename
         });
     } catch (error) {
+        console.error("DETAILED ERROR:", error.message || error); // Ab asli wajah dikhegi
         res.status(500).json({
-            message: "internal server error",
+            message: "Cloudinary Upload Failed",
             error: error.message
         });
     }

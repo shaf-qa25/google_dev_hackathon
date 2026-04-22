@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
-// import { uploadCSV } from '../services/api';
+import { uploadCSV } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const UploadPage = () => {
