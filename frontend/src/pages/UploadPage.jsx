@@ -6,11 +6,10 @@ import { cn } from '../utils/cn';
 import { uploadCSV } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
-const UploadPage = () => {
+const UploadPage = ({ setCsvUrl }) => {
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
-    const [csvUrl, setCsvUrl] = useState("");
     const navigate = useNavigate();
 
     // Drag & Drop logic
@@ -26,14 +25,12 @@ const UploadPage = () => {
     });
 
     const handleUpload = async () => {
-        if (!file) return;
-        setUploading(true);
         try {
             const response = await uploadCSV(file);
-            setCsvUrl(response.data.csvUrl);
-            setUploadSuccess(true);
-            // Hackathon fast forward: Direct navigate to dashboard for now
-            // Later you can add Column Selection UI here
+            const url = response.data.csvUrl;
+
+            setCsvUrl(url); // Global state update karo
+            navigate('/dashboard'); // Phir navigate karo
         } catch (error) {
             console.error("Upload failed", error);
             alert("Upload failed. Check console.");

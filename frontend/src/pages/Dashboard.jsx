@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { runAnalysis } from '../services/api';
 import { StatCard } from '../components/ui/StatCard';
 import { VerdictBanner } from '../components/ui/VerdictBanner';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react'; // Missing import fix
 
-const Dashboard = () => {
-    const location = useLocation();
-    const { csvUrl } = location.state || {}; // Upload page se URL pakadna
+const Dashboard = ({ csvUrl, setGlobalData }) => {
+    const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -17,7 +17,10 @@ const Dashboard = () => {
                 // Mock config for now
                 const config = { target: "Approved", sensitive: "Gender" };
                 const response = await runAnalysis(csvUrl, config);
-                setData(response.data.data);
+
+                const result = response.data.data; // API response data
+                setData(result);
+                setGlobalData(result); // Sync with global state for Comparison Page
             } catch (err) {
                 console.error("Analysis failed", err);
             } finally {
@@ -26,15 +29,29 @@ const Dashboard = () => {
         };
 
         if (csvUrl) fetchAnalysis();
-    }, [csvUrl]);
+    }, [csvUrl, setGlobalData]);
 
-    if (loading) return <div className="text-center py-20 text-accent animate-pulse">Running ML Audit Engine...</div>;
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-accent font-medium animate-pulse">Running ML Audit Engine...</p>
+        </div>
+    );
+
     if (!data) return <div className="text-center py-20 text-danger">No Data Available. Please upload again.</div>;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            {/* 1. Verdict Section */}
-            <VerdictBanner verdict={data.verdict} score={data.biasScore} />
+            {/* 1. Verdict Section & Navigation */}
+            <div className="flex flex-col md:flex-row gap-6 items-center justify-between">
+                <VerdictBanner verdict={data.verdict} score={data.biasScore} />
+                <button
+                    onClick={() => navigate('/comparison')}
+                    className="shrink-0 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-2xl border border-slate-700 transition-all text-sm font-bold shadow-lg"
+                >
+                    View Detailed Comparison <ArrowRight className="w-4 h-4" />
+                </button>
+            </div>
 
             {/* 2. Key Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

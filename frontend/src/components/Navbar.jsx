@@ -1,4 +1,5 @@
 import { ShieldAlert } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
     return (
@@ -8,9 +9,11 @@ const Navbar = () => {
                     <ShieldAlert className="text-accent w-8 h-8" />
                     <span className="text-xl font-bold tracking-tight">AI Bias <span className="text-accent">Audit</span></span>
                 </div>
+
                 <div className="flex gap-6 text-sm font-medium text-slate-400">
-                    <a href="/" className="hover:text-white transition-colors">Home</a>
-                    <a href="/docs" className="hover:text-white transition-colors">Documentation</a>
+                    <Link to="/" className="hover:text-white transition-colors">Upload</Link>
+                    <Link to="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
+                    <Link to="/comparison" className="hover:text-white transition-colors">Bias Comparison</Link>
                 </div>
             </div>
         </nav>
