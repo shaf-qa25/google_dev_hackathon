@@ -30,8 +30,9 @@ exports.analyzeDataset = async (csvUrl, config) => {
         console.log("DEBUG: Calling Shivani's API at:", process.env.ML_API_URL);
 
         const response = await axios.post(process.env.ML_API_URL, {
-            url: csvUrl,
-            configuration: config
+            dataset_url: csvUrl,
+            target_column: config.target,
+            sensitive_feature: config.sensitive
         });
 
         console.log("--- DEBUG: Response from Shivani's API ---");

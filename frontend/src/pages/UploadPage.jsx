@@ -43,17 +43,73 @@ const UploadPage = ({ setCsvUrl, setGlobalData }) => {
     };
 
     // Configuration ke baad final analysis call
+    // const handleStartAnalysis = async () => {
+    //     setUploading(true);
+    //     try {
+    //         // Humne jo API response format discuss kiya hai, ye wahi fetch karega
+    //         const response = await runAnalysis(tempUrl, config);
+
+    //         setCsvUrl(tempUrl);
+    //         setGlobalData(response.data.data); // Pure JSON format ko store karna
+    //         navigate('/dashboard');
+    //     } catch (err) {
+    //         alert("Analysis failed. Make sure columns match your CSV.");
+    //     } finally {
+    //         setUploading(false);
+    //     }
+    // };
+
+
+
     const handleStartAnalysis = async () => {
         setUploading(true);
         try {
-            // Humne jo API response format discuss kiya hai, ye wahi fetch karega
+            console.log("Starting Analysis with:", { tempUrl, config });
+
             const response = await runAnalysis(tempUrl, config);
 
-            setCsvUrl(tempUrl);
-            setGlobalData(response.data.data); // Pure JSON format ko store karna
-            navigate('/dashboard');
+            // Debugging: Pehle console mein dekho Shivani ne kya bheja
+            console.log("API Response:", response.data);
+
+            // Check if response has the data we need
+            // Axios response structure: response.data (Backend JSON) -> .data (Actual result)
+            const analysisResult = response.data?.data || response.data;
+
+            if (analysisResult && analysisResult.verdict) {
+                setCsvUrl(tempUrl);
+                setGlobalData(analysisResult);
+
+                // Success feedback (Optional but good for UX)
+                console.log("Analysis Successful, navigating...");
+                navigate('/dashboard');
+            } else {
+                // Agar request success hui par data empty aaya
+                throw new Error("Analysis completed but returned empty results.");
+            }
+
         } catch (err) {
-            alert("Analysis failed. Make sure columns match your CSV.");
+            // --- Elaborated Error Handling ---
+
+            // 1. Agar Backend ne koi error message bheja hai (e.g., 400 or 500 from Render)
+            const serverMessage = err.response?.data?.message || err.response?.data?.error;
+
+            // 2. Agar ML API respond nahi kar rahi (Timeout)
+            const isTimeout = err.code === 'ECONNABORTED' || err.message.includes('timeout');
+
+            console.error("Full Error Object:", err);
+
+            if (serverMessage) {
+                alert(`Backend Error: ${serverMessage}`);
+            } else if (isTimeout) {
+                alert("ML API is taking too long to respond. Please try again in a moment.");
+            } else if (err.request) {
+                // Request bhei par response nahi mila (Network issue)
+                alert("No response from server. Check if your backend is live on Render.");
+            } else {
+                // Kuch aur hi fat gaya
+                alert(`Error: ${err.message}`);
+            }
+
         } finally {
             setUploading(false);
         }
