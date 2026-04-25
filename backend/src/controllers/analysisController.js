@@ -32,12 +32,14 @@ exports.runAnalysis = async (req, res) => {
 
         // Service call
         const result = await mlService.analyzeDataset(csvUrl, config);
+        console.log("Final Result to be sent to Frontend:", result);
 
         res.status(200).json({
             success: true,
             data: result
         });
     } catch (error) {
+        console.error("Controller Error:", error.message);
         res.status(500).json({
             success: false,
             message: error.message

@@ -25,14 +25,28 @@ exports.analyzeDataset = async (csvUrl, config) => {
         };
     }
 
-    // JAB API MIL JAYEGI, TAB YE CHALEGA:
+    // mlService.js
     try {
+        console.log("DEBUG: Calling Shivani's API at:", process.env.ML_API_URL);
+
         const response = await axios.post(process.env.ML_API_URL, {
             url: csvUrl,
             configuration: config
         });
+
+        console.log("--- DEBUG: Response from Shivani's API ---");
+        console.log(JSON.stringify(response.data, null, 2));
+
         return response.data;
+
     } catch (error) {
-        throw new Error("ML API is not responding");
+        console.error("--- DEBUG: ML API ERROR ---");
+        if (error.response) {
+            console.error("Status:", error.response.status);
+            console.error("Data:", error.response.data);
+        } else {
+            console.error("Message:", error.message);
+        }
+        throw new Error("ML API is not responding correctly");
     }
 };
