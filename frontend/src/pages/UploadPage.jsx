@@ -1,21 +1,25 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, AlertCircle, ArrowRight, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../utils/cn';
-import { uploadCSV } from '../services/api';
+import { uploadCSV, runAnalysis } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
-const UploadPage = ({ setCsvUrl }) => {
+const UploadPage = ({ setCsvUrl, setGlobalData }) => {
+    const navigate = useNavigate();
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
-    const [uploadSuccess, setUploadSuccess] = useState(false);
-    const navigate = useNavigate();
+    const [step, setStep] = useState(1); // Step 1: Upload, Step 2: Configure
+    const [tempUrl, setTempUrl] = useState("");
 
-    // Drag & Drop logic
-    const onDrop = useCallback((acceptedFiles) => {
+    // Naye inputs jo Shivani ki API ko chahiye
+    const [config, setConfig] = useState({
+        target: "",
+        sensitive: ""
+    });
+
+    const onDrop = useCallback(acceptedFiles => {
         setFile(acceptedFiles[0]);
-        setUploadSuccess(false);
     }, []);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -24,16 +28,32 @@ const UploadPage = ({ setCsvUrl }) => {
         multiple: false
     });
 
-    const handleUpload = async () => {
+    // Pehle sirf file upload hogi
+    const handleInitialUpload = async () => {
+        setUploading(true);
         try {
             const response = await uploadCSV(file);
-            const url = response.data.csvUrl;
+            setTempUrl(response.data.csvUrl);
+            setStep(2); // Move to configuration step
+        } catch (err) {
+            alert("Upload failed. Check backend/Cloudinary.");
+        } finally {
+            setUploading(false);
+        }
+    };
 
-            setCsvUrl(url); // Global state update karo
-            navigate('/dashboard'); // Phir navigate karo
-        } catch (error) {
-            console.error("Upload failed", error);
-            alert("Upload failed. Check console.");
+    // Configuration ke baad final analysis call
+    const handleStartAnalysis = async () => {
+        setUploading(true);
+        try {
+            // Humne jo API response format discuss kiya hai, ye wahi fetch karega
+            const response = await runAnalysis(tempUrl, config);
+
+            setCsvUrl(tempUrl);
+            setGlobalData(response.data.data); // Pure JSON format ko store karna
+            navigate('/dashboard');
+        } catch (err) {
+            alert("Analysis failed. Make sure columns match your CSV.");
         } finally {
             setUploading(false);
         }
@@ -41,70 +61,62 @@ const UploadPage = ({ setCsvUrl }) => {
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
-            <div className="text-center space-y-2">
-                <h1 className="text-4xl font-bold tracking-tight">Upload your <span className="text-accent">Dataset</span></h1>
-                <p className="text-slate-400">We'll analyze your CSV for bias and discrimination patterns.</p>
+            {/* Step Indicator */}
+            <div className="flex justify-center gap-4 mb-8">
+                <div className={`h-2 w-16 rounded-full ${step >= 1 ? 'bg-accent' : 'bg-slate-800'}`} />
+                <div className={`h-2 w-16 rounded-full ${step >= 2 ? 'bg-accent' : 'bg-slate-800'}`} />
             </div>
 
-            <div
-                {...getRootProps()}
-                className={cn(
-                    "border-2 border-dashed rounded-2xl p-12 transition-all cursor-pointer flex flex-col items-center justify-center gap-4",
-                    isDragActive ? "border-accent bg-accent/5" : "border-slate-800 hover:border-slate-700 bg-card-bg/30",
-                    uploadSuccess && "border-success/50 bg-success/5"
-                )}
-            >
-                <input {...getInputProps()} />
-
-                <AnimatePresence mode="wait">
-                    {!file ? (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center">
-                            <div className="bg-slate-800 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                                <Upload className="text-slate-400" />
-                            </div>
-                            <p className="text-lg font-medium">Drag & drop your CSV file here</p>
-                            <p className="text-sm text-slate-500">or click to browse files</p>
-                        </motion.div>
-                    ) : (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-                            <FileText className="text-accent" />
-                            <div className="text-left">
-                                <p className="font-medium truncate max-w-[200px]">{file.name}</p>
-                                <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(2)} KB</p>
-                            </div>
-                            {uploadSuccess && <CheckCircle2 className="text-success w-5 h-5" />}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-
-            <div className="flex justify-center">
-                {!uploadSuccess ? (
-                    <button
-                        onClick={handleUpload}
-                        disabled={!file || uploading}
-                        className="bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full font-semibold transition-all flex items-center gap-2"
-                    >
-                        {uploading ? "Uploading..." : "Verify & Upload"}
-                    </button>
+            <AnimatePresence mode="wait">
+                {step === 1 ? (
+                    <motion.div key="step1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                        <div {...getRootProps()} className={`border-2 border-dashed rounded-[2.5rem] p-12 text-center transition-all cursor-pointer ${isDragActive ? 'border-accent bg-accent/5' : 'border-slate-800 hover:border-slate-700'}`}>
+                            <input {...getInputProps()} />
+                            <Upload className="mx-auto w-16 h-16 text-slate-500 mb-4" />
+                            <h3 className="text-xl font-bold text-white">Drop your dataset here</h3>
+                            <p className="text-slate-400 mt-2">Only CSV files are supported for bias auditing.</p>
+                            {file && <div className="mt-4 p-3 bg-slate-800 rounded-xl inline-flex items-center gap-2 text-accent font-medium text-sm"><FileText size={16} /> {file.name}</div>}
+                        </div>
+                        <button onClick={handleInitialUpload} disabled={!file || uploading} className="w-full mt-6 bg-accent hover:bg-accent/90 py-4 rounded-2xl font-bold disabled:bg-slate-800 flex justify-center items-center gap-2">
+                            {uploading ? "Uploading to Cloudinary..." : "Upload & Continue"} <ArrowRight size={20} />
+                        </button>
+                    </motion.div>
                 ) : (
-                    <button
-                        onClick={() => navigate('/dashboard', { state: { csvUrl } })}
-                        className="bg-success hover:bg-success/90 text-white px-8 py-3 rounded-full font-semibold transition-all flex items-center gap-2"
-                    >
-                        Go to Dashboard <ArrowRight className="w-4 h-4" />
-                    </button>
-                )}
-            </div>
+                    <motion.div key="step2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card-bg border border-slate-800 p-10 rounded-[2.5rem] space-y-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <Settings2 className="text-accent" />
+                            <h3 className="text-2xl font-bold text-white">Model Configuration</h3>
+                        </div>
 
-            {/* Quick Info */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10">
-                <div className="p-4 rounded-xl border border-slate-800 bg-card-bg/20">
-                    <AlertCircle className="text-accent mb-2 w-5 h-5" />
-                    <h4 className="font-medium mb-1 italic text-sm text-slate-300">Privacy First</h4>
-                    <p className="text-xs text-slate-500">Your data is processed securely and deleted after analysis.</p>
-                </div>
-            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Target Column</label>
+                                <input
+                                    placeholder="e.g. loan_status"
+                                    className="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl text-white outline-none focus:border-accent"
+                                    value={config.target}
+                                    onChange={(e) => setConfig({ ...config, target: e.target.value })}
+                                />
+                                <p className="text-[10px] text-slate-500 italic">The column you want to predict.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm text-slate-400 uppercase font-bold tracking-wider">Sensitive Column</label>
+                                <input
+                                    placeholder="e.g. gender or race"
+                                    className="w-full bg-slate-900 border border-slate-800 p-4 rounded-xl text-white outline-none focus:border-accent"
+                                    value={config.sensitive}
+                                    onChange={(e) => setConfig({ ...config, sensitive: e.target.value })}
+                                />
+                                <p className="text-[10px] text-slate-500 italic">The attribute to check for bias.</p>
+                            </div>
+                        </div>
+
+                        <button onClick={handleStartAnalysis} disabled={!config.target || !config.sensitive || uploading} className="w-full mt-6 bg-success hover:bg-success/90 py-4 rounded-2xl font-bold text-dark-bg flex justify-center items-center gap-2">
+                            {uploading ? "Running Audit..." : "Start Bias Audit"} <CheckCircle2 size={20} />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

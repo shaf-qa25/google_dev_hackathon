@@ -1,11 +1,9 @@
 import axios from 'axios';
 
-
-const VERCEL_BACKEND_URL = 'https://biasaudit.onrender.com/api';
-const LOCAL_BACKEND_URL = 'http://localhost:5000/api';
+const BACKEND_URL = 'https://biasaudit.onrender.com/api';
 
 const api = axios.create({
-    baseURL: import.meta.env.PROD ? VERCEL_BACKEND_URL : LOCAL_BACKEND_URL,
+    baseURL: BACKEND_URL,
     headers: {
         'Content-Type': 'application/json',
     },
