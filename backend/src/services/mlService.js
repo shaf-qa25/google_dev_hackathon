@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const MOCK_MODE = true;
+const MOCK_MODE = false;
 
 exports.analyzeDataset = async (csvUrl, config) => {
     if (MOCK_MODE) {
