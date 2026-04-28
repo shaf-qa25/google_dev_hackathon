@@ -16,14 +16,17 @@ function App() {
         <main className="flex-grow container mx-auto px-6 py-10">
           <Routes>
             {/* 1. Public Route */}
-            <Route path="/" element={<UploadPage setCsvUrl={setCsvUrl} />} />
+            <Route
+              path="/"
+              element={<UploadPage setCsvUrl={setCsvUrl} setGlobalData={setAnalysisData} />}
+            />
 
             {/* 2. Protected Dashboard Route */}
             <Route
               path="/dashboard"
               element={
-                csvUrl ? (
-                  <Dashboard csvUrl={csvUrl} setGlobalData={setAnalysisData} />
+                analysisData ? (
+                  <Dashboard data={analysisData} />
                 ) : (
                   <Navigate to="/" replace />
                 )

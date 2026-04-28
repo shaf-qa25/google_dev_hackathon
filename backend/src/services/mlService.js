@@ -1,7 +1,6 @@
 const axios = require('axios');
 
-// Jab Shivani API de degi, isko false kar dena
-const MOCK_MODE = false;
+const MOCK_MODE = true;
 
 exports.analyzeDataset = async (csvUrl, config) => {
     if (MOCK_MODE) {
